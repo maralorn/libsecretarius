@@ -4,6 +4,10 @@ exports.addNull = (cb) ->
 	(args...) ->
 		cb.apply this, [null].concat args
 
+exports.dummyCB = (e) ->
+	if e?
+		throw e
+
 exports.findElement = (name, obj) ->
 	for name_, elem of obj
 		return elem if name_.toLowerCase() is name
@@ -31,8 +35,8 @@ exports.singlify = (func) ->
 				cb.apply this, args
 		func.apply this, [caller].concat args
 
-debugOn = false
-exports.enableDebugMode = -> debugOn = true
+exports.debugOn = false
+exports.enableDebugMode = -> exports.debugOn = true
 
 errString = ->
 	b = Error.prepareStackTrace
@@ -52,5 +56,5 @@ errString = ->
 	"#{time} #{func} in #{file} at #{line}"
 
 exports.debug = (args...) ->
-	return unless debugOn
+	return unless exports.debugOn
 	console.log.apply null, [errString()].concat args

@@ -1,11 +1,7 @@
 module.exports = (host = 'http://localhost:3000') ->
 	model = {}
 
-	inNode = not (inBrowser = window?)
-
-	if inNode
-		model.connect = (_host) ->
-			host = _host
+	inBrowser = window?
 
 	class ModelObject
 		on: (event, cb) ->
@@ -16,24 +12,25 @@ module.exports = (host = 'http://localhost:3000') ->
 		emit: (event, data) =>
 			if @_cbs?[event]?
 				for cb in @_cbs[event]
-#				try
-						cb.call this, data
-#				catch err
-#					@removeCb event, cb
+				try
+					cb.call this, data
+				catch err
+					@removeCb event, cb
+					console.log err.stack
 			
 		removeCb: (event, cb) ->
 			@_cbs[event] = (elem for elem in @_cbs[event] when elem isnt cb)
 			delete @_cbs[event] if @_cbs[event] == []
-			debug event, "callback removed", @constructor.name
+			debug event, 'callback removed', @constructor.name
 
 		onChanged: (cb) ->
-			@on("changed", cb)
+			@on 'changed', cb
 				
 		onDeleted: (cb) ->
-			@on("deleted", cb)
+			@on 'deleted', cb
 
 		change: (data) ->
-			@emit "changed", data
+			@emit 'changed', data
 
 		delete: ->
 			@emit "deleted"
@@ -48,10 +45,11 @@ module.exports = (host = 'http://localhost:3000') ->
 		@emit: (event, data) ->
 			if cbs[@name]?[event]?
 				for cb in cbs[@name][event]
-#				try
+				try
 						cb data
-#				catch err
-#					@removeCb event, cb
+				catch err
+					@removeCb event, cb
+					console.log err.stack
 			
 		@removeCb: (event, cb) ->
 			cbs[@name][event] = (elem for elem in cbs[@name][event] when elem isnt cb)
@@ -88,7 +86,7 @@ module.exports = (host = 'http://localhost:3000') ->
 
 		storeInfo: (values, mustExist = false) ->
 			unless (info = @infos[values.id])? or mustExist
-				info = new (model.getClassByType values.type) values.id
+				info = new (util.findElement values.type, model) values.id
 				@registerInfo info
 			info?._store values
 
@@ -119,7 +117,8 @@ module.exports = (host = 'http://localhost:3000') ->
 		port.addEventListener 'message', (event) -> updatecb event.data.data, event.data.name
 		do port.start
 	else
-		require('./events') updatecb
+		r = require
+		r('./events') updatecb
 		
 	getInfos = (_, cls, filter, params = {}) ->
 		params.filter = filter
@@ -131,13 +130,14 @@ module.exports = (host = 'http://localhost:3000') ->
 	if inBrowser
 		request = (cb, type, data, url) ->
 			options =
+				url: url
 				type: type
 				success: util.addNull cb
 				dataType: "json"
 			if data? then request.data = data
 			$.ajax options
 	else
-		httprequest = require('request')
+		httprequest = r('request')
 		request = (_, type, data, url) ->
 			options =
 				method: type.toUpperCase()

@@ -5,17 +5,20 @@
   "author": "Malte Brandy <malte.brandy@maralorn.de>",
   "main" : "./lib/index.js",
   "devDependencies": {
-	"coffee-script": ""
+	"coffee-script": "",
+	"fs-extra":"",
+	"glob":""
   },
   "dependencies": {
 	"streamline": "",
 	"eventsource": "",
-	"request": ""
+	"request": "",
+	"optimist": ""
   },
 
   "keywords": [],
   "repository": "git://github.com/maralorn/libsecretarius",
   "scripts": {
-	  "prepublish": "mkdir -p lib && cp src/* lib && _coffee -c lib/* && rm lib/*._coffee"
+	  "prepublish": "_coffee build"
 	}
 }
