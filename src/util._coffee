@@ -4,6 +4,9 @@ exports.addNull = (cb) ->
 	(args...) ->
 		cb.apply this, [null].concat args
 
+exports.doAsync = (func) ->
+	func exports.dummyCB
+
 exports.dummyCB = (e) ->
 	if e?
 		throw e

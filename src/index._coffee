@@ -12,11 +12,11 @@ module.exports = (host = 'http://localhost:3000') ->
 		emit: (event, data) =>
 			if @_cbs?[event]?
 				for cb in @_cbs[event]
-				try
-					cb.call this, data
-				catch err
-					@removeCb event, cb
-					console.log err.stack
+					try
+						cb.call this, data
+					catch err
+						@removeCb event, cb
+						console.log err.stack
 			
 		removeCb: (event, cb) ->
 			@_cbs[event] = (elem for elem in @_cbs[event] when elem isnt cb)
@@ -45,11 +45,11 @@ module.exports = (host = 'http://localhost:3000') ->
 		@emit: (event, data) ->
 			if cbs[@name]?[event]?
 				for cb in cbs[@name][event]
-				try
+					try
 						cb data
-				catch err
-					@removeCb event, cb
-					console.log err.stack
+					catch err
+						@removeCb event, cb
+						console.log err.stack
 			
 		@removeCb: (event, cb) ->
 			cbs[@name][event] = (elem for elem in cbs[@name][event] when elem isnt cb)
@@ -105,7 +105,7 @@ module.exports = (host = 'http://localhost:3000') ->
 			when 'changed'
 				model.cache.updateInfo data
 			when 'inbox'
-				model.inbox._store (-> return), data
+				model.inbox._store util.dummyCB, data
 			when 'deleted'
 				model.cache.delete data.id
 				util.findElement(data.type, model).deleted data.id
@@ -134,7 +134,7 @@ module.exports = (host = 'http://localhost:3000') ->
 				type: type
 				success: util.addNull cb
 				dataType: "json"
-			if data? then request.data = data
+			if data? then options.data = data
 			$.ajax options
 	else
 		httprequest = r('request')
@@ -172,8 +172,7 @@ module.exports = (host = 'http://localhost:3000') ->
 	class model.Information extends PGObject
 		constructor: (@id) ->
 			@values = false
-			tempType = @constructor.name.toLowerCase()
-			@type = tempType if tempType != "information"
+			@type = 'information'
 
 		_create: (_, args) ->
 			{id: @id} = @_post _, args
@@ -230,7 +229,7 @@ module.exports = (host = 'http://localhost:3000') ->
 		_store: (values) ->
 			@values = true
 			(@[key] = value) for key,value of values
-			@change values
+			do @change
 
 		@getAll: util.singlify (_) ->
 			all = getInfos _, this, 'all'
@@ -258,9 +257,14 @@ module.exports = (host = 'http://localhost:3000') ->
 		delete: ->
 	"""
 	class model.Note extends model.Information
-		create: (_, content) ->
+		constructor: ->
+			super
+			@type = 'note'
+
+		create: (_, content, status = 'inbox') ->
 			@_create _,
-				content: content,
+				content: content
+				status: status
 
 		setContent: (_, content) ->
 			@_patch _,
@@ -268,6 +272,10 @@ module.exports = (host = 'http://localhost:3000') ->
 				content: content
 
 	class model.Task extends model.Information
+		constructor: ->
+			super
+			@type = 'task'
+
 		done: (_) ->
 			@_patch _,
 				method: 'done'
@@ -293,6 +301,10 @@ module.exports = (host = 'http://localhost:3000') ->
 			
 
 	class model.Project extends model.Task
+		constructor: ->
+			super
+			@type = 'project'
+
 		create: (_, description, referencing=null, parent=null) ->
 			@_create _,
 				description: description
@@ -308,6 +320,10 @@ module.exports = (host = 'http://localhost:3000') ->
 				method: 'uncollapse'
 
 	class model.Asap extends model.Task
+		constructor: ->
+			super
+			@type = 'asap'
+
 		create: (_, description, list, referencing=null, project=null) ->
 			@_create _,
 				description: description
@@ -321,6 +337,10 @@ module.exports = (host = 'http://localhost:3000') ->
 				method: 'setList'
 
 	class model.AsapList extends model.Information
+		constructor: ->
+			super
+			@type = 'asaplist'
+
 		create: (_, name) ->
 			@_create _,
 				name: name
@@ -449,7 +469,6 @@ module.exports = (host = 'http://localhost:3000') ->
 			@values
 
 		_store: (_, @values) ->
-			@values.first = model.cache.getInformation _, @values.first if @values.first?
 			@change @values
 	"""
 	class Urgent extends PGObject

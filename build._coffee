@@ -5,6 +5,7 @@ fs = require 'fs-extra'
 glob = require 'glob'
 path = require 'path'
 optimist = require 'optimist'
+coffee = require 'coffee-script'
 streamlineCompiler = require 'streamline/lib/compiler/compile'
 
 argv = require('optimist')
@@ -33,6 +34,11 @@ compiler =
 	_coffee:
 		ext: 'js'
 		compiler: (_, data, filename) -> _node _, data, filename, '_coffee'
+
+	coffee:
+		ext: 'js'
+		compiler: (_, data, filename) -> coffee.compile data,
+			filename: filename
 
 parseFile = (_, filepath) ->
 	data = fs.readFile filepath, 'utf8', _
